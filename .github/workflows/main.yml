@@ -1,51 +1,67 @@
 name: CI
- 
+
 on:
   push:
     branches:
-      - main
+      - main # Pastikan ini sesuai dengan branch utama repository Anda
   pull_request:
     branches:
-      - main
- 
+      - main # Pastikan ini sesuai dengan branch utama repository Anda
+
 env:
   CSV_URL: "MLproject/train_pca.csv"
- 
+
 jobs:
   build:
     runs-on: ubuntu-latest
- 
+    # --- PERBAIKAN PENTING: Tambahkan permissions untuk menulis ke repository ---
+    permissions:
+      contents: write # Ini memberikan izin kepada workflow untuk menulis ke repository
+
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE
       - uses: actions/checkout@v3
- 
-      # Setup Python 3.12.7
+        # --- PERBAIKAN PENTING: Ambil seluruh riwayat git ---
+        with:
+          fetch-depth: 0 # Penting untuk operasi git commit dan push
+
+      # Setup Python 3.13.1
       - name: Set up Python 3.13.1
         uses: actions/setup-python@v4
         with:
           python-version: "3.13.1"
-      
+
       # Check Env Variables
       - name: Check Env
         run: |
-          echo $CSV_URL
- 
-      # Install mlflow
+          # --- PERBAIKAN: Mengakses environment variable dengan sintaks yang benar ---
+          echo "CSV_URL: ${{ env.CSV_URL }}"
+
+      # Install dependencies (termasuk mlflow dan dependensi lainnya)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mlflow
-      
+          # --- PERBAIKAN: Tambahkan semua dependensi yang diperlukan ---
+          pip install mlflow numpy pandas matplotlib scikit-learn joblib
+          # Jika Anda memiliki file requirements.txt di MLproject/, lebih baik gunakan:
+          # pip install -r MLproject/requirements.txt
+
       # Run as a mlflow project
       - name: Run mlflow project
         run: |
-          mlflow run MLproject --env-manager=local 
- 
+          mlflow run MLproject --env-manager=local
+
       # Save models to GitHub Repository
       - name: Save mlruns to repo
         run: |
-          git config --global user.name ${{ secrets.username }}
-          git config --global user.email ${{ secrets.email }}
+          # Menggunakan secrets untuk user.name dan user.email
+          git config --global user.name ${{ secrets.USERNAME }} # Pastikan nama secret di GitHub sama persis (case-sensitive)
+          git config --global user.email ${{ secrets.EMAIL }}   # Pastikan nama secret di GitHub sama persis (case-sensitive)
+          
           git add mlruns/
-          git commit -m "Save mlruns from CI run"
+          # --- PERBAIKAN PENTING: Tangani kasus jika tidak ada perubahan untuk di-commit ---
+          # Ini mencegah workflow gagal jika tidak ada file baru/perubahan di mlruns/
+          git commit -m "Save mlruns from CI run" || echo "No changes to commit"
+          
+          # --- PERBAIKAN: Pastikan push ke branch 'main' (sesuai trigger) ---
           git push origin main
