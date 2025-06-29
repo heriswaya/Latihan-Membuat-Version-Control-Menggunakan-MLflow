@@ -25,6 +25,20 @@ jobs:
         with:
           fetch-depth: 0 # Penting untuk operasi git commit dan push
 
+      # --- LFS: Initialize Git LFS ---
+      - name: Install Git LFS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-lfs
+          git lfs install
+      # --- LFS: Track large files (sesuai kebutuhan Anda) ---
+      # Anda bisa menjalankan ini di langkah yang sama atau terpisah.
+      # Contoh: jika model.pkl selalu ada di mlruns/*/artifacts/model.pkl
+      - name: Configure Git LFS Tracking
+        run: |
+          git lfs track "mlruns/**/*.pkl" # Ini akan melacak semua file .pkl di dalam mlruns/
+          git add .gitattributes # Penting: commit file .gitattributes yang baru dibuat/diubah
+
       # Setup Python 3.13.1
       - name: Set up Python 3.13.1
         uses: actions/setup-python@v4
